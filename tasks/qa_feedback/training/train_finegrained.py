@@ -148,11 +148,10 @@ def main():
     print(args)
     print(args['model'])
     print(args['model']['policy_model'])
-    print(args['model']['policy_model']['ckpt'])
+    print(args['model']['policy_model']['name'])
     print(args['env']['max_input_len'])
     print("====")
-    raise Exception("panic")
-    tokenizer = transformers.AutoTokenizer.from_pretrained(args['model']['policy_model']['ckpt'], 
+    tokenizer = transformers.AutoTokenizer.from_pretrained(args['model']['policy_model']['name'], 
                                                            model_max_length=args['env']['max_input_len'])
     tokenizer.padding_side = args['model']['policy_model']['input_padding_side']
     tokenizer.max_input_len = args['env']['max_input_len']
@@ -177,14 +176,14 @@ def main():
     log_info(f'Initializing models ...')
 
     ref_policy = T5Policy(
-        model_ckpt=args['model']['policy_model']['ckpt'],
+        model_ckpt=args['model']['policy_model']['name'],
         tokenizer=tokenizer,
         policy_value_sharing=args['model']['value_model']['policy_value_sharing'],
         accelerator=accelerator,
     )
     ref_policy.model, ref_policy.linear = accelerator.prepare(ref_policy.model, ref_policy.linear)
     policy = T5Policy(
-        model_ckpt=args['model']['policy_model']['ckpt'],
+        model_ckpt=args['model']['policy_model']['name'],
         tokenizer=tokenizer,
         policy_value_sharing=args['model']['value_model']['policy_value_sharing'],
         accelerator=accelerator,
@@ -192,7 +191,7 @@ def main():
     policy.model, policy.linear = accelerator.prepare(policy.model, policy.linear)
     
     value = T5Value(
-        model_ckpt=args['model']['value_model']['ckpt'],
+        model_ckpt=args['model']['value_model']['name'],
         model=policy.model if args['model']['value_model']['policy_value_sharing'] else None,
         tokenizer=tokenizer,
         accelerator=accelerator,
@@ -203,9 +202,9 @@ def main():
     
     reward = FineGrainedReward(
         tokenizer=tokenizer,
-        non_factual_model_ckpt=args['reward']['relevance_model']['ckpt'],
-        factual_model_ckpt=args['reward']['factuality_model']['ckpt'],
-        completeness_model_ckpt=args['reward']['completeness_model']['ckpt'],
+        non_factual_model_ckpt=args['reward']['relevance_model']['name'],
+        factual_model_ckpt=args['reward']['factuality_model']['name'],
+        completeness_model_ckpt=args['reward']['completeness_model']['name'],
         kl_coef=args['ppo']['kl_coef'],
         verbosity_positive_reward = args['reward']['relevance_model']['positive_reward'],
         verbosity_negative_reward = args['reward']['relevance_model']['negative_reward'],

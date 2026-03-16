@@ -145,7 +145,7 @@ def main():
 
     
     # initialize policy and value model tokenizers
-    tokenizer = transformers.AutoTokenizer.from_pretrained(args['model']['policy_model']['ckpt'], 
+    tokenizer = transformers.AutoTokenizer.from_pretrained(args['model']['policy_model']['name'], 
                                                            model_max_length=args['env']['max_input_len'])
     tokenizer.padding_side = args['model']['policy_model']['input_padding_side']
     tokenizer.max_input_len = args['env']['max_input_len']
@@ -170,14 +170,14 @@ def main():
     log_info(f'Initializing models ...')
 
     ref_policy = T5Policy(
-        model_ckpt=args['model']['policy_model']['ckpt'],
+        model_ckpt=args['model']['policy_model']['name'],
         tokenizer=tokenizer,
         policy_value_sharing=args['model']['value_model']['policy_value_sharing'],
         accelerator=accelerator,
     )
     ref_policy.model, ref_policy.linear = accelerator.prepare(ref_policy.model, ref_policy.linear)
     policy = T5Policy(
-        model_ckpt=args['model']['policy_model']['ckpt'],
+        model_ckpt=args['model']['policy_model']['name'],
         tokenizer=tokenizer,
         policy_value_sharing=args['model']['value_model']['policy_value_sharing'],
         accelerator=accelerator,
@@ -185,7 +185,7 @@ def main():
     policy.model, policy.linear = accelerator.prepare(policy.model, policy.linear)
     
     value = T5Value(
-        model_ckpt=args['model']['value_model']['ckpt'],
+        model_ckpt=args['model']['value_model']['name'],
         model=policy.model if args['model']['value_model']['policy_value_sharing'] else None,
         tokenizer=tokenizer,
         accelerator=accelerator,
@@ -196,7 +196,7 @@ def main():
     
     reward = BaselineReward(
         tokenizer=tokenizer,
-        baseline_model_ckpt=args['reward']['baseline_model']['ckpt'],
+        baseline_model_ckpt=args['reward']['baseline_model']['name'],
         kl_coef=args['ppo']['kl_coef'],
         baseline_reward_mean = args['reward']['baseline_model']['mean'],
         baseline_reward_std = args['reward']['baseline_model']['std'],
