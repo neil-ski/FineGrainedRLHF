@@ -145,6 +145,13 @@ def main():
 
     
     # initialize policy and value model tokenizers
+    print(args)
+    print(args['model'])
+    print(args['model']['policy_model'])
+    print(args['model']['policy_model']['ckpt'])
+    print(args['env']['max_input_len'])
+    print("====")
+    raise Exception("panic")
     tokenizer = transformers.AutoTokenizer.from_pretrained(args['model']['policy_model']['ckpt'], 
                                                            model_max_length=args['env']['max_input_len'])
     tokenizer.padding_side = args['model']['policy_model']['input_padding_side']
