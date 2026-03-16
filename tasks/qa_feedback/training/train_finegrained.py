@@ -129,6 +129,20 @@ class TextGenDataset(Dataset):
         return result
     
 
+def login_to_hugging_face():
+    from huggingface_hub import login
+
+    try:
+        # if using google colab you can add your token as a secret
+        from google.colab import userdata
+        token = userdata.get("HF_TOKEN")
+    except:
+        # if not then add it as an environment variable
+        token = os.getenv('HF_TOKEN')
+
+    # You need to authenticate with HuggingFace to use this model. The approval process took a few minutes for me.
+    login(token)
+
 def main():
 
     login_to_hugging_face()
@@ -270,17 +284,3 @@ def main():
             
 if __name__ == '__main__':
     main()
-
-def login_to_hugging_face():
-    from huggingface_hub import login
-
-    try:
-        # if using google colab you can add your token as a secret
-        from google.colab import userdata
-        token = userdata.get("HF_TOKEN")
-    except:
-        # if not then add it as an environment variable
-        token = os.getenv('HF_TOKEN')
-
-    # You need to authenticate with HuggingFace to use this model. The approval process took a few minutes for me.
-    login(token)
