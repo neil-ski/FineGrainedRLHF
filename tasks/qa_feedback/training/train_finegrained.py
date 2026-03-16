@@ -136,7 +136,9 @@ def login_to_hugging_face():
         # if using google colab you can add your token as a secret
         from google.colab import userdata
         token = userdata.get("HF_TOKEN")
-    except:
+    except Exception as e:
+        print("FAIL")
+        print(e)
         # if not then add it as an environment variable
         token = os.getenv('HF_TOKEN')
 
