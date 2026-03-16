@@ -13,38 +13,56 @@ import torch.nn.functional as F
 from transformers import T5ForConditionalGeneration
 from typing import Optional, List, Iterable, Dict, Any, Tuple
 from .utils import logits_to_entropy, mask_pad
+from transformers import (
+    AutoModelForCausalLM,
+    AutoTokenizer,
+)
 
 
-class T5Policy:
+class GeneralPolicy:
 
+    # TODO how to save and load model
     def __init__(self,
-                 model_ckpt: str,
-                 tokenizer,
+                 model_name: str,
                  policy_value_sharing: bool,
                  accelerator,
                 ):
-        self.tokenizer = tokenizer
+        self.tokenizer = AutoTokenizer.from_pretrained(
+		    model_name, 
+            padding_side="left",    # TODO hmmm
+            trust_remote_code=model_args.trust_remote_code,
+	    )
+        # TODO hmmm 
+        tokenizer.add_special_tokens({"pad_token": "[PAD]"})
+
         self.policy_value_sharing = policy_value_sharing
         self.accelerator = accelerator
 
-        self.model = T5ForConditionalGeneration.from_pretrained(model_ckpt)
+        self.model = AutoModelForCausalLM.from_pretrained(
+		    model_name, 
+            dtype="bfloat16",
+	    )
         
         # regression head for policy-value sharing
         self.linear = torch.nn.Linear(self.model.config.d_model, 1)    
         self.model.eval()
         
     def sample(self,
-               prompts_input_ids: torch.Tensor, # (B, input_len)
-               prompts_attention_mask: torch.Tensor, # (B, input_len)
-               do_sample: bool = True,
-               top_k: int = None,
-               top_p: float = None,
-               temperature: float = None,
-               num_beams: int = 1,
-               num_return_sequences: int = 1,
-              ) -> Dict[str, Union[torch.Tensor, List[str]]]:
+        prompts_input_ids: torch.Tensor, # (B, input_len)
+        prompts_attention_mask: torch.Tensor, # (B, input_len)
+        do_sample: bool = True,
+        top_k: int = None,
+        top_p: float = None,
+        temperature: float = None,
+        num_beams: int = 1,
+        num_return_sequences: int = 1,
+    ) -> Dict[str, Union[torch.Tensor, List[str]]]:
         
-        prompts_text = self.tokenizer.batch_decode(prompts_input_ids, skip_special_tokens=True, clean_up_tokenization_spaces=True)
+        prompts_text = self.tokenizer.batch_decode(
+            prompts_input_ids, 
+            skip_special_tokens=True, 
+            clean_up_tokenization_spaces=True
+        )
 
         unwrapped_model = self.accelerator.unwrap_model(self.model)
         

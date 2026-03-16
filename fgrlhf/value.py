@@ -14,7 +14,10 @@ import torch.nn.functional as F
 from transformers import T5ForConditionalGeneration
 from typing import Optional, List, Iterable, Dict, Any, Tuple
 from .utils import logits_to_entropy, mask_pad
-
+from transformers import (
+    AutoModelForCausalLM,
+    AutoTokenizer,
+)
 
 class MLP(torch.nn.Module):
     
@@ -31,23 +34,26 @@ class MLP(torch.nn.Module):
         return self.model(x)
 
 
-class T5Value:
+class ValueModel:
 
     def __init__(self,
-                 model_ckpt: str,
-                 model,
-                 tokenizer,
+                 model_name: str,
                  accelerator,
                  freeze_model: bool = False,
                 ):
-        self.tokenizer = tokenizer
+        
+        self.tokenizer = AutoTokenizer.from_pretrained(
+		    model_name, 
+            padding_side="left",    # TODO hmmm
+            trust_remote_code=model_args.trust_remote_code,
+	    )
         self.accelerator = accelerator
         
-        if model is not None:
-            self.model = model
-            return
-
-        self.model = T5ForConditionalGeneration.from_pretrained(model_ckpt)
+    
+        self.model = AutoModelForCausalLM.from_pretrained(
+		    model_name, 
+            dtype="bfloat16",
+	    )
             
         self.linear = MLP(self.model.config.d_model, 1)
         
@@ -56,7 +62,8 @@ class T5Value:
             for param in self.model.parameters():
                 param.requires_grad = False
 
-
+    
+    # TODO I need to add this later
     def forward_pass(self,
                      prompts_input_ids: torch.Tensor, # (B, input_len)
                      prompts_attention_mask: torch.Tensor, # (B, input_len)

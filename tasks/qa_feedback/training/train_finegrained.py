@@ -149,9 +149,8 @@ def main():
     print("++++++")
     print(args['model']['policy_model']['ckpt'])
     tokenizer = transformers.AutoTokenizer.from_pretrained(
-        args['model']['policy_model']['ckpt'], 
+        , 
         model_max_length=args['env']['max_input_len'], 
-        local_files_only=True
     )
     tokenizer.padding_side = args['model']['policy_model']['input_padding_side']
     tokenizer.max_input_len = args['env']['max_input_len']

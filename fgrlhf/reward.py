@@ -13,7 +13,6 @@ import torch
 from typing import Optional, List, Iterable, Dict, Any, Tuple
 from .utils import mask_pad
 
-
 class BasicReward(metaclass=abc.ABCMeta):
 
     def __init__(self,
