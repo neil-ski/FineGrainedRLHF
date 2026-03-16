@@ -1,6 +1,6 @@
 model:
   policy_model:
-    name: google-t5/t5-large
+    ckpt: ./tasks/qa_feedback/model_outputs/t5-large-1k-train
     input_padding_side: right
     train_generation_kwargs:
       do_sample: True
@@ -11,22 +11,22 @@ model:
       do_sample: False
       num_beams: 1
   value_model:
-    name: google-t5/t5-large
+    ckpt: t5-base
     freeze_value_model: False
     policy_value_sharing: False
   
 
 reward:
   relevance_model:
-    name: google-t5/t5-large
+    ckpt: ./tasks/qa_feedback/model_outputs/rel_rm
     positive_reward: 0.3
     negative_reward: -0.3
   factuality_model:
-    name: google-t5/t5-large
+    ckpt: ./tasks/qa_feedback/model_outputs/fact_rm
     positive_reward: 0.5
     negative_reward: -0.5
   completeness_model:
-    name: google-t5/t5-large
+    ckpt: ./tasks/qa_feedback/model_outputs/comp_rm
     mean: -0.44677690555995353
     std: 8.301160619054132
     bias: 0.0
