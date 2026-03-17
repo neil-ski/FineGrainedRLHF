@@ -184,11 +184,14 @@ def main():
                                   shuffle=False, drop_last=True, collate_fn=train_dataset.collate_fn)
 
     eval_dataset = TextGenDataset( 'dev',  tokenizer, accelerator=accelerator, length_limit=None)
+    print("BATCH SIZE")
+    print(args['train']['sampling_batch_size_per_card'])
     eval_dataloader = DataLoader(eval_dataset, batch_size=args['train']['sampling_batch_size_per_card'], 
                                  shuffle=False, drop_last=False, collate_fn=eval_dataset.collate_fn)
 
     train_dataloader, eval_dataloader = accelerator.prepare(train_dataloader, eval_dataloader)
-
+    print("EVAL BATCH SIZE")
+    print(eval_dataloader.batch_size)
 
     # Initialize models and optimizer
     log_info(f'Initializing models ...')

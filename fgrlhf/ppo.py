@@ -364,12 +364,9 @@ class PPOTrainer:
         n_entries = 0
         print("HERE1.4")
         with torch.no_grad():
+            print("BATCH SIZE")
+            print(self.eval_dataloader.batch_size)
             validation_batch = tqdm(self.eval_dataloader) if self.accelerator.is_main_process else self.eval_dataloader
-            print("LEN")
-            print(len(validation_batch))
-            print("LEN")
-            print(len(enumerate(validation_batch)))
-
             for i, batch in enumerate(validation_batch):
                 print("I BATCH")
                 print(i)
