@@ -58,7 +58,7 @@ class T5Policy:
                 top_p=top_p,
                 temperature=temperature,
                 num_return_sequences=num_return_sequences,
-                synced_gpus=True,
+                synced_gpus=False,
             ) # begins with 0 ([BOS]); ends with 1 ([EOS])
             
         else:
@@ -69,7 +69,7 @@ class T5Policy:
                 num_beams=num_beams,
                 do_sample=False,
                 num_return_sequences=num_return_sequences,
-                synced_gpus=True,
+                synced_gpus=False,
             )
 
         generated_input_ids = generated_input_ids[:, 1:].contiguous() # no beginning; ends with 1 ([EOS])
