@@ -1,3 +1,31 @@
+```
+git clone https://github.com/neil-ski/FineGrainedRLHF.git
+
+cd FineGrainedRLHF
+pip install -e .
+
+pip install gdown
+mkdir tasks/qa_feedback/model_outputs
+
+gdown --id 1vdLN1U3J2cllhQ_WWqfZr6_CCP_SbyS2 --output tasks/qa_feedback/model_outputs/t5-large-1k-train.zip
+gdown --id 1lGMHiD6YVBTGF-XGBe0wStpuc5z73uOc --output tasks/qa_feedback/model_outputs/rel_rm.zip
+gdown --id 1yj2dwsMkP6nofxLcIjeCaVgeUCSzvDVR --output tasks/qa_feedback/model_outputs/fact_rm.zip
+gdown --id 19SQqGN88CiUrLSReklaewIxHayZJ77Q- --output tasks/qa_feedback/model_outputs/comp_rm.zip
+
+cd tasks/qa_feedback/model_outputs
+unzip t5-large-1k-train.zip
+unzip rel_rm.zip
+unzip fact_rm.zip
+unzip comp_rm.zip
+
+cd ../../..
+pwd
+```
+
+```
+HF_TOKEN="" bash tasks/qa_feedback/training/train_finegrained.sh
+```
+
 <p align="center">
   <img src="fgrlhf_logo.png" width=512px>
 </p>

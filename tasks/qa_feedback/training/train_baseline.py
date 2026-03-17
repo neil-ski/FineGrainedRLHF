@@ -105,7 +105,7 @@ class TextGenDataset(Dataset):
         
         # process input prompts
         prompts = [item['prompt'] for item in batch]
-        prompts_tok = self.tokenizer.batch_encode_plus(
+        prompts_tok = self.tokenizer(
             prompts,
             return_tensors='pt', 
             padding='max_length', 
