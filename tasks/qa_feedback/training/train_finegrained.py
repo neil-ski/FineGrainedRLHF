@@ -235,6 +235,7 @@ def main():
         sep = "</s>"
     )
     
+    print("HERE -1")
     # prepare reward models
     reward.verbosity_reward.nf_reward_model = accelerator.prepare(reward.verbosity_reward.nf_reward_model)
     reward.factuality_reward.f_reward_model = accelerator.prepare(reward.factuality_reward.f_reward_model)
@@ -258,7 +259,7 @@ def main():
     
     optimizer, scheduler = accelerator.prepare(optimizer, scheduler)
 
-
+    print("HERE0")
     # Set up trainer
     trainer = PPOTrainer(
         args=args,
@@ -273,7 +274,7 @@ def main():
         accelerator=accelerator,
         log_info=log_info,
     )
-    
+    print("HERE")
     steps = list(range(total_steps + 1))
     steps = tqdm(steps) if accelerator.is_main_process else steps
     for step in steps:
