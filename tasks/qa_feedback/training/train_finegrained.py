@@ -148,6 +148,7 @@ def login_to_hugging_face():
 def main():
 
     login_to_hugging_face()
+    nltk.download('punkt_tab')
     # set seed
     set_seed(args['train']['seed'], args['train']['cuda_deterministic'])
     

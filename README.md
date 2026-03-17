@@ -3,6 +3,7 @@ git clone https://github.com/neil-ski/FineGrainedRLHF.git
 
 cd FineGrainedRLHF
 pip install -e .
+python -m spacy download en_core_web_sm
 
 pip install gdown
 mkdir tasks/qa_feedback/model_outputs
