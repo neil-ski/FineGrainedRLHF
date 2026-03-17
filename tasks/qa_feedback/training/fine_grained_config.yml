@@ -54,7 +54,7 @@ train:
   training_batch_size_per_card: 4
   lr: 0.00001
   n_warmup_steps: 100
-  n_ppo_epoch_per_rollout: 4
+  n_ppo_epoch_per_rollout: 1
   kl_threshold: 10.0
   clip_grad: False
   max_grad_norm: 0.5

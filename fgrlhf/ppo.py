@@ -246,6 +246,11 @@ class PPOTrainer:
         self.value_model.linear.train()
         
         for ppo_epoch_idx in range(self.args['train']['n_ppo_epoch_per_rollout']):
+            print("LOOP")
+            print(ppo_epoch_idx)
+            print("TOTAL ")
+            print(self.args['train']['n_ppo_epoch_per_rollout'])
+
             self.optimizer.zero_grad()
             
             # get the weight for each sub-batch

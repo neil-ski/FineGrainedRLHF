@@ -277,6 +277,8 @@ def main():
     steps = list(range(total_steps + 1))
     steps = tqdm(steps) if accelerator.is_main_process else steps
     for step in steps:
+        print("STEP")
+        print(step)
         trainer.train(step)
         accelerator.wait_for_everyone()
         # early stopping because KL explodes
