@@ -365,12 +365,14 @@ class PPOTrainer:
         print("HERE1.4")
         with torch.no_grad():
             validation_batch = tqdm(self.eval_dataloader) if self.accelerator.is_main_process else self.eval_dataloader
+            print("LEN")
             print(len(validation_batch))
+            print("LEN")
+            print(len(enumerate(validation_batch)))
 
             for i, batch in enumerate(validation_batch):
                 print("I BATCH")
                 print(i)
-                print(batch)
                 results = self.policy_model.sample(
                     prompts_input_ids=batch['prompts_input_ids'],
                     prompts_attention_mask=batch['prompts_attention_mask'],
