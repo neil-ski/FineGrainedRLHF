@@ -164,26 +164,28 @@ class PPOTrainer:
         results['loss/value'] = vf_loss
 
     def train(self, step):
+        print("ABBA1")
         if step % self.args['train']['eval_interval'] == 0:
             self.save(step=step)
             self.valid(step=step)
 
         self.accelerator.wait_for_everyone()
+        print("ABBA2")
         try:
             batch = next(self.train_sampler)
         except StopIteration:
             self.train_sampler = iter(self.train_dataloader)
             batch = next(self.train_sampler)
-        
+        print("ABBA3")
         self.ref_policy_model.model.eval()
-        
+        print("ABBA4")
         self.policy_model.model.eval()
         # self.policy_model.model.train()
-        
+        print("ABBA5")
         self.value_model.model.eval()
         self.value_model.linear.eval()
         # self.value_model.model.train()
-        
+        print("ABBA6")
         # Rollout from current policy
         with torch.no_grad():
             results = self.policy_model.sample(
@@ -192,31 +194,33 @@ class PPOTrainer:
                 num_return_sequences=self.args['env']['train_num_samples_per_input'],
                 **self.args['model']['policy_model']['train_generation_kwargs'],
             )
-    
+        print("ABBA7")
         forward_inputs = {
             'prompts_input_ids': results['prompts_input_ids'],
             'prompts_attention_mask': results['prompts_attention_mask'],
             'generated_input_ids': results['generated_input_ids'],
             'generated_attention_mask': results['generated_attention_mask'],
         }
+        print("ABBA8")
         
         with torch.no_grad():
             policy_forward = self.policy_model.forward_pass(**forward_inputs)
             results.update(policy_forward)
         
+        print("ABBA9")
         # Run value network
         if not self.args['model']['value_model']['policy_value_sharing']:
             with torch.no_grad(): # treat the values at beginning of step as ground-truth
                 value_forward = self.value_model.forward_pass(**forward_inputs)
                 results['generated_value'] = value_forward['generated_value']
                 results['generated_value'] *= results['generated_attention_mask']  # TODO: I doubt if this line is necessary
-
+        print("ABBA10")
         # Run ref policy
         with torch.no_grad():
             ref_policy_forward = self.ref_policy_model.forward_pass(**forward_inputs)
             results['generated_ref_logits'] = ref_policy_forward['generated_logits']
             results['generated_ref_logprobs'] = ref_policy_forward['generated_logprobs']
-        
+        print("ABBA11")
         # Get reward
         with torch.no_grad():
             reward_results = self.reward_model.get_reward(
@@ -229,10 +233,10 @@ class PPOTrainer:
             )
             results.update(reward_results)
             self.reward_model.kl_penalize_reward(results)
-
+        print("ABBA12")
         # Get advantages
         self.compute_advantages(results, self.args['env']['train_num_samples_per_input'])
-        
+        print("ABBA13")
         n_results = len(results['generated_input_ids'])
         
         loss_totals, loss_policies, loss_values =  [], [], []
@@ -244,7 +248,7 @@ class PPOTrainer:
         self.policy_model.model.train()
         self.value_model.model.train()
         self.value_model.linear.train()
-        
+        print("ABBA14")
         for ppo_epoch_idx in range(self.args['train']['n_ppo_epoch_per_rollout']):
             print("LOOP")
             print(ppo_epoch_idx)
