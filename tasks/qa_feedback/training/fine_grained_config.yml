@@ -35,7 +35,7 @@ reward:
 env:
   max_input_len: 1024
   max_generated_len: 200
-  train_num_samples_per_input: 4
+  train_num_samples_per_input: 1
 
 ppo:
   kl_coef: 0.3
@@ -50,8 +50,8 @@ ppo:
 train:
   total_episodes: 80000
   eval_interval: 50
-  sampling_batch_size_per_card: 8
-  training_batch_size_per_card: 4
+  sampling_batch_size_per_card: 1
+  training_batch_size_per_card: 1
   lr: 0.00001
   n_warmup_steps: 100
   n_ppo_epoch_per_rollout: 1
