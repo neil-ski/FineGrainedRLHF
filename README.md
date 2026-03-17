@@ -1,18 +1,24 @@
 ```
+# get my code
 git clone https://github.com/neil-ski/FineGrainedRLHF.git
 
+# install it and dependencies
 cd FineGrainedRLHF
 pip install -e .
 python -m spacy download en_core_web_sm
 
+# install tool to get model checkpoints from Google Drive
 pip install gdown
 mkdir tasks/qa_feedback/model_outputs
 
+# the original authors put their model checkpoints in Google Drive
+# so download them
 gdown --id 1vdLN1U3J2cllhQ_WWqfZr6_CCP_SbyS2 --output tasks/qa_feedback/model_outputs/t5-large-1k-train.zip
 gdown --id 1lGMHiD6YVBTGF-XGBe0wStpuc5z73uOc --output tasks/qa_feedback/model_outputs/rel_rm.zip
 gdown --id 1yj2dwsMkP6nofxLcIjeCaVgeUCSzvDVR --output tasks/qa_feedback/model_outputs/fact_rm.zip
 gdown --id 19SQqGN88CiUrLSReklaewIxHayZJ77Q- --output tasks/qa_feedback/model_outputs/comp_rm.zip
 
+# unzip them
 cd tasks/qa_feedback/model_outputs
 unzip t5-large-1k-train.zip
 unzip rel_rm.zip
@@ -24,6 +30,7 @@ pwd
 ```
 
 ```
+# you'll need to put your HF_TOKEN here 
 HF_TOKEN="" bash tasks/qa_feedback/training/train_finegrained.sh
 ```
 

@@ -64,7 +64,7 @@ train:
 logging:
   run_name: finegrained
   wandb_log: True
-  wandb_entity: your-wandb-username
+  wandb_entity: nflugovoy
   wandb_project: RLHF
   log_interval: 1
   save_dir: tasks/qa_feedback/model_outputs/fine_grained
