@@ -166,9 +166,11 @@ class PPOTrainer:
     def train(self, step):
         print("ABBA1")
         if step % self.args['train']['eval_interval'] == 0:
+            print("ABBA1.1")
             self.save(step=step)
+            print("ABBA1.2")
             self.valid(step=step)
-
+        print("ABBA1.3")
         self.accelerator.wait_for_everyone()
         print("ABBA2")
         try:
