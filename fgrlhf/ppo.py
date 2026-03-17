@@ -362,10 +362,15 @@ class PPOTrainer:
         wandb_table = None
         
         n_entries = 0
-        
+        print("HERE1.4")
         with torch.no_grad():
-            for i, batch in enumerate(tqdm(self.eval_dataloader) if self.accelerator.is_main_process else self.eval_dataloader):
+            validation_batch = tqdm(self.eval_dataloader) if self.accelerator.is_main_process else self.eval_dataloader
+            print(len(validation_batch))
 
+            for i, batch in enumerate(validation_batch):
+                print("I BATCH")
+                print(i)
+                print(batch)
                 results = self.policy_model.sample(
                     prompts_input_ids=batch['prompts_input_ids'],
                     prompts_attention_mask=batch['prompts_attention_mask'],
