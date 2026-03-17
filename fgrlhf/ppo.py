@@ -82,7 +82,8 @@ class PPOTrainer:
             next(self.train_sampler)
 
         self.eval_accs = {}
-        
+        print("++++++")
+        print(self.args['logging']['wandb_log'])
 
     def compute_advantages(self, results, num_samples):
         
