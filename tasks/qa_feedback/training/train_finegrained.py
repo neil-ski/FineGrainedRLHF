@@ -183,7 +183,7 @@ def main():
     train_dataloader = DataLoader(train_dataset, batch_size=args['train']['sampling_batch_size_per_card'], 
                                   shuffle=False, drop_last=True, collate_fn=train_dataset.collate_fn)
 
-    eval_dataset = TextGenDataset( 'dev',  tokenizer, accelerator=accelerator, length_limit=None)
+    eval_dataset = TextGenDataset( 'dev',  tokenizer, accelerator=accelerator, length_limit=20)
     print(f"The evaluation dataset has {len(eval_dataset)} items.")
     print("BATCH SIZE")
     print(args['train']['sampling_batch_size_per_card'])
