@@ -373,8 +373,9 @@ class PPOTrainer:
             print(self.eval_dataloader.batch_size)
             validation_batch = tqdm(self.eval_dataloader) if self.accelerator.is_main_process else self.eval_dataloader
             for i, batch in enumerate(validation_batch):
-                print("I BATCH")
-                print(i)
+                current_bs = batch['prompts_input_ids'].shape[0]
+                print(f"--- Iteration {i} | Real Batch Size: {current_bs} ---")
+                
                 results = self.policy_model.sample(
                     prompts_input_ids=batch['prompts_input_ids'],
                     prompts_attention_mask=batch['prompts_attention_mask'],
