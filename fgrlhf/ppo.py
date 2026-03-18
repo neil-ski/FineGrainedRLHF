@@ -7,6 +7,7 @@
 #  All Rights Reserved.
 #  *********************************************************
 
+import time
 import argparse
 from collections import defaultdict
 from itertools import chain
@@ -352,8 +353,12 @@ class PPOTrainer:
     def valid(self, step):
         self.log_info(f'Evaluating [step {step}] ...')
 
+        start_time = time.perf_counter()
         self.accelerator.wait_for_everyone()
-        
+        end_time = time.perf_counter()
+        elapsed_time = end_time - start_time
+        print(f"WAIT 1 time: {elapsed_time} seconds")
+
         self.policy_model.model.eval()
         if not self.args['model']['value_model']['policy_value_sharing']:
             self.value_model.model.eval()
@@ -386,17 +391,35 @@ class PPOTrainer:
                 )
                 
                 # gather all results
+                start_time = time.perf_counter()
+
                 batch = self.accelerator.gather_for_metrics(batch)
                 results = self.accelerator.gather_for_metrics(results)
+
+                end_time = time.perf_counter()
+                elapsed_time = end_time - start_time
+                print(f"gather 1 time: {elapsed_time} seconds")
+
                 
                 for eval_k, eval_v in eval_results.items():
+                    start_time = time.perf_counter()
                     eval_results[eval_k] = self.accelerator.gather(
                         torch.tensor(eval_v, device=results['generated_input_ids'].device))
                     
+                    end_time = time.perf_counter()
+                    elapsed_time = end_time - start_time
+                    print(f"gather 2 time: {elapsed_time} seconds")
+
                 # initialize wandb table if it does not exist
                 if wandb_table is None:
+                    start_time = time.perf_counter()
+
                     columns.extend(list(eval_results.keys())) 
                     wandb_table = wandb.Table(columns=columns)
+
+                    end_time = time.perf_counter()
+                    elapsed_time = end_time - start_time
+                    print(f"wandb init time: {elapsed_time} seconds")
                 
                 if self.accelerator.is_main_process:
                     
@@ -452,10 +475,23 @@ class PPOTrainer:
                 self.log_info(f'Best ckpt updated to [step {step}]')
                 
                 # save best policy again
+                start_time = time.perf_counter()
+                
                 self.accelerator.wait_for_everyone()
+
+                end_time = time.perf_counter()
+                elapsed_time = end_time - start_time
+                print(f"WAIT 3 time: {elapsed_time} seconds")
+
+                start_time = time.perf_counter()
+
                 policy_model_state_dict = self.accelerator.unwrap_model(self.policy_model.model).state_dict()
                 self.accelerator.save(policy_model_state_dict, f"{self.args['logging']['save_dir']}/best_policy.pth")
 
+
+                end_time = time.perf_counter()
+                elapsed_time = end_time - start_time
+                print(f"SAVE time: {elapsed_time} seconds")
 
     def save(self, step):
         # this will overwrite an existing ckpt with the save filename!
