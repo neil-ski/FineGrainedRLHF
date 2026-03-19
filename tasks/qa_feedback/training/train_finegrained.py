@@ -10,6 +10,7 @@ import shutil
 from tqdm import tqdm
 from typing import Dict
 
+import datasets
 from datasets import load_dataset, Dataset
 from tasks.qa_feedback.training.filtered_indices import indices
 from tasks.qa_feedback.training.gemma_reward_sentence import GemmaRewardModelSentence
