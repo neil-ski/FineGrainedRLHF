@@ -3,6 +3,7 @@ from collections import defaultdict
 from itertools import chain
 import json
 import logging
+from fgrlhf.gemma_value import GemmaValue
 import numpy as np
 import os
 import random
@@ -25,8 +26,7 @@ import yaml
 import nltk
 
 from fgrlhf.ppo import PPOTrainer
-from fgrlhf.policy import T5Policy, MistralPolicy
-from fgrlhf.value import T5Value
+from fgrlhf.policy import MistralPolicy
 from fgrlhf.utils import ensure_dir, set_seed, reduce_mean, reduce_sum, ceil_div, whiten, clamp
 
 from reward import FineGrainedReward
@@ -203,12 +203,17 @@ def main():
     train_dataloader = DataLoader(train_dataset, batch_size=args['train']['sampling_batch_size_per_card'], 
                                   shuffle=False, drop_last=True, collate_fn=train_dataset.collate_fn)
 
-    eval_dataset = TextGenDataset(dataset_splits['test'], 'dev', tokenizer, accelerator=accelerator, length_limit=20)
+    eval_dataset = TextGenDataset(dataset_splits['test'], 'dev', tokenizer, accelerator=accelerator)
     print(f"The evaluation dataset has {len(eval_dataset)} items.")
     print("BATCH SIZE")
     print(args['train']['sampling_batch_size_per_card'])
-    eval_dataloader = DataLoader(eval_dataset, batch_size=args['train']['sampling_batch_size_per_card'], 
-                                 shuffle=False, drop_last=False, collate_fn=eval_dataset.collate_fn)
+    eval_dataloader = DataLoader(
+        eval_dataset, 
+        batch_size=args['train']['sampling_batch_size_per_card'], 
+        shuffle=False, 
+        drop_last=False, 
+        collate_fn=eval_dataset.collate_fn
+    )
 
     train_dataloader, eval_dataloader = accelerator.prepare(train_dataloader, eval_dataloader)
     print("EVAL BATCH SIZE")
@@ -234,7 +239,7 @@ def main():
     policy.model, policy.linear = accelerator.prepare(policy.model, policy.linear)
     
     # TODO replace with GemmaValue
-    value = T5Value(
+    value = GemmaValue(
         model_ckpt=args['model']['value_model']['ckpt'],
         model=policy.model if args['model']['value_model']['policy_value_sharing'] else None,
         tokenizer=tokenizer,
