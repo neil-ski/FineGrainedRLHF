@@ -5,6 +5,10 @@ import spacy
 # Ensure this is imported at the top of reward.py or within the class
 from gemma_reward_model import GemmaRewardModel
 
+# Define the expected structure above your class/function
+class RewardMetadata(TypedDict, total=False):
+    prompt: str
+
 class GemmaRewardModelSentence:
     def __init__(self, policy_tokenizer):
         """
