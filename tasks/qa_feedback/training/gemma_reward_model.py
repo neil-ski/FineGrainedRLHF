@@ -1,7 +1,6 @@
 from transformers import AutoTokenizer, AutoModelForCausalLM
 import spacy
 import torch
-from trl.trainer.utils import disable_dropout_in_model
 from torch import nn
 import numpy as np
 
@@ -57,7 +56,6 @@ class GemmaRewardModel(nn.Module):
         device_map="auto",
     )
 
-    disable_dropout_in_model(self.base_model)
     self.base_model.eval() # change to eval mode # TODO hmmm what should this be for training?
 
     # cache nlp
