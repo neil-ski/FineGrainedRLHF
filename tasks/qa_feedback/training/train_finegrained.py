@@ -11,7 +11,7 @@ from tqdm import tqdm
 from typing import Dict
 
 import datasets
-from datasets import load_dataset, Dataset
+from datasets import load_dataset
 from tasks.qa_feedback.training.filtered_indices import indices
 from tasks.qa_feedback.training.gemma_reward_sentence import GemmaRewardModelSentence
 import torch
@@ -29,10 +29,6 @@ from fgrlhf.value import T5Value
 from fgrlhf.utils import ensure_dir, set_seed, reduce_mean, reduce_sum, ceil_div, whiten, clamp
 
 from reward import FineGrainedReward
-
-print(datasets.__version__)
-print(Dataset.from_list)
-raise Exception("panic")
 
 logging.basicConfig(level=logging.ERROR)
 
@@ -193,7 +189,7 @@ def main():
             new_item['prompt'] = f"{attack} {item['prompt']}"
             expanded_data.append(new_item)
             
-    hf_dataset = Dataset.from_list(expanded_data)
+    hf_dataset = datasets.Dataset.from_list(expanded_data)
     
     dataset_splits = hf_dataset.train_test_split(test_size=0.1, seed=args['train']['seed'])
 
