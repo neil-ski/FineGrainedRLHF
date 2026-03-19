@@ -12,6 +12,7 @@ import re
 from fgrlhf.reward import BasicReward
 from fgrlhf.reward_utils import split_text_to_subsentences, split_text_to_sentences
 from fgrlhf.evaluators import get_rouge_scores
+from typing import List, Optional, TypedDict
 
 from my_longformer import LongformerForSequenceClassification, LongformerForTokenClassification
 
@@ -222,6 +223,9 @@ class SubSentenceVerbosityReward:
                 "n_sub_sentences": [len(item) for item in batch_sentence_end_indices], 
                 "n_corrects": n_corrects}
 
+# Define the expected structure above your class/function
+class RewardMetadata(TypedDict, total=False):
+    prompt: str
 
 class FactualityReward:
     def __init__(self,
@@ -259,14 +263,14 @@ class FactualityReward:
     def find_sep_position(self, input_ids):
         return torch.nonzero(input_ids == self.sep_id, as_tuple=False).squeeze().tolist()
     
-    def process_one_generation(self, long_text, policy_text_len):
+    def process_one_generation(self, long_text, policy_text_len) -> tuple[str, list[int]] :
         
         sentence_end_char_idxs= split_text_to_sentences(long_text, self.nlp)
            
         sentences = [long_text[sentence_end_char_idxs[i]:sentence_end_char_idxs[i+1]] for i in range(len(sentence_end_char_idxs)-1)]
         
         # Initialize an empty list to store the end token indices of each sentence
-        sentence_end_indices = []
+        sentence_end_indices: list[int] = []
     
         for sent_idx in range(len(sentences)):
             tokens = self.policy_tokenizer.tokenize(long_text[:sentence_end_char_idxs[sent_idx+1]])
@@ -278,7 +282,7 @@ class FactualityReward:
         reward_input = ' '.join(reward_sentences)
         
         # in case overlength    
-        sentence_end_indices = [min(item, policy_text_len-1) for item in sentence_end_indices]
+        sentence_end_indices: list[int] = [min(item, policy_text_len-1) for item in sentence_end_indices]
     
         return reward_input, sentence_end_indices
     
@@ -288,11 +292,11 @@ class FactualityReward:
                    generated_input_ids: torch.tensor, # (B, output_len)
                    generated_attention_mask: torch.tensor, # (B, output_len)
                    generated_texts: List[str],
-                   metadata=None,
+                   metadata: List[RewardMetadata],
                    ):
         
-        batch_f_reward_inputs = []
-        batch_sentence_end_indices = []
+        batch_f_reward_inputs: list[str] = []
+        batch_sentence_end_indices: list[list[int]] = []
         
         # get the length of generated outputs
         policy_inputs_lens = torch.sum(generated_attention_mask, dim=1).tolist()
@@ -340,7 +344,7 @@ class FactualityReward:
             sentence_f_reward_probs = this_f_pred[sep_indices]
             
             # align back to the original sentence
-            policy_sentence_end_indices = batch_sentence_end_indices[text_idx]
+            policy_sentence_end_indices: list[int] = batch_sentence_end_indices[text_idx]
             policy_inputs_len = policy_inputs_lens[text_idx]
             
             this_factuality_reward = [0]*policy_inputs_len
@@ -350,13 +354,13 @@ class FactualityReward:
             for i, end_idx in enumerate(policy_sentence_end_indices):
                 
                 # 0 is has error, 1 is no error
-                f_error_type = torch.argmax(sentence_f_reward_probs[i][[0,2]]).item()
+                f_error_type = torch.argmax(sentence_f_reward_probs[i][[0,2]]).item() # TODO what is this doing?
                 factuality_reward = self.factuality_positive_reward if f_error_type == 1 else self.factuality_negative_reward
                 
                 # aggregate the rewards
                 this_factuality_reward[end_idx] = factuality_reward
                 
-                if f_error_type == 1:
+                if f_error_type == 1: # TODO what does this do? 
                     this_n_correct += 1
                     
             n_corrects.append(this_n_correct)

@@ -10,6 +10,7 @@ import shutil
 from tqdm import tqdm
 from typing import Dict
 
+from tasks.qa_feedback.training.gemma_reward_sentence import GemmaRewardModelSentence
 import torch
 import torch.nn.functional as F
 from torch.utils.data import Dataset, DataLoader
@@ -222,22 +223,7 @@ def main():
     if not args['model']['value_model']['policy_value_sharing']:
         value.model, value.linear = accelerator.prepare(value.model, value.linear)
     
-    reward = FineGrainedReward(
-        tokenizer=tokenizer,
-        non_factual_model_ckpt=args['reward']['relevance_model']['ckpt'],
-        factual_model_ckpt=args['reward']['factuality_model']['ckpt'],
-        completeness_model_ckpt=args['reward']['completeness_model']['ckpt'],
-        kl_coef=args['ppo']['kl_coef'],
-        verbosity_positive_reward = args['reward']['relevance_model']['positive_reward'],
-        verbosity_negative_reward = args['reward']['relevance_model']['negative_reward'],
-        factuality_positive_reward = args['reward']['factuality_model']['positive_reward'],
-        factuality_negative_reward = args['reward']['factuality_model']['negative_reward'],
-        completeness_reward_mean = args['reward']['completeness_model']['mean'],
-        completeness_reward_std = args['reward']['completeness_model']['std'],
-        completeness_reward_bias = args['reward']['completeness_model']['bias'],
-        completeness_reward_scale = args['reward']['completeness_model']['scale'],
-        sep = "</s>"
-    )
+    reward = GemmaRewardModelSentence(tokenizer)
     
     print("HERE -1")
     # prepare reward models
