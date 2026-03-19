@@ -29,6 +29,9 @@ from fgrlhf.utils import ensure_dir, set_seed, reduce_mean, reduce_sum, ceil_div
 
 from reward import FineGrainedReward
 
+print(datasets.__version__)
+raise Exception("panic")
+
 logging.basicConfig(level=logging.ERROR)
 
 # prepare accelerator and logger
