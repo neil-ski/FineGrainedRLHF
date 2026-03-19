@@ -228,7 +228,7 @@ def main():
     print("HERE -1")
     # prepare reward models
     # Prepare the new Gemma model
-    reward.gemma_reward.model = accelerator.prepare(reward.gemma_reward.model)
+    reward.gemma_reward.base_model = accelerator.prepare(reward.gemma_reward.base_model)
     
     # prepare optimizers and schedulers
     if args['model']['value_model']['policy_value_sharing']:
