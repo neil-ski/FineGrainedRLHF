@@ -1,6 +1,8 @@
-from typing import List, Dict, Any
+from typing import List
 import torch
 import spacy
+from typing import List, TypedDict
+
 
 # Ensure this is imported at the top of reward.py or within the class
 from gemma_reward_model import GemmaRewardModel
