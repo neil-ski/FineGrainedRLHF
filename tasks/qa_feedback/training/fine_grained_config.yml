@@ -31,6 +31,7 @@ reward:
     std: 8.301160619054132
     bias: 0.0
     scale: 0.3
+  granuliarty: coarse
 
 env:
   max_input_len: 1024
@@ -39,13 +40,14 @@ env:
 
 ppo:
   kl_coef: 0.3
-  lam: 0.95
+  lam: 1.0 # must be set to 1.0 for mdr to work
   gamma: 1.0
   pg_coef: 1.0
   vf_coef: 1.0
   cliprange: 0.2
   cliprange_value: 0.2
-  whiten_rewards: True
+  whiten_rewards: False
+  use_mdr: False
 
 train:
   total_episodes: 80000

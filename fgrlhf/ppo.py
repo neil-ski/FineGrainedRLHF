@@ -46,10 +46,16 @@ class PPOTrainer:
                  optimizer: torch.optim.Optimizer,
                  scheduler: torch.optim.lr_scheduler._LRScheduler,
                  accelerator: accelerate.Accelerator,
+                 use_mdr: bool,
                  log_info,
                 ):
         
+        # for now non-1.0 lambda in the advantage estimation is not supported
+        assert args['ppo']['lam'] == 1.0
+
+
         self.accelerator = accelerator
+        self.use_mdr = use_mdr
         self.log_info = log_info
         self.args = args
         self.train_dataloader = train_dataloader
@@ -101,11 +107,36 @@ class PPOTrainer:
             lastgaelam = 0
             advantages_reversed = []
             gen_length = mask.sum(dim=1).max().item()
-            for t in reversed(range(gen_length)):
-                nextvalues = old_values[:, t + 1] if t < gen_length - 1 else 0.0
-                delta = whitened_rewards[:, t] + self.args['ppo']['gamma'] * nextvalues - old_values[:, t]
-                lastgaelam = delta + self.args['ppo']['gamma'] * self.args['ppo']['lam'] * lastgaelam
-                advantages_reversed.append(lastgaelam)
+            if self.use_mdr:
+                gamma = self.args['ppo']['gamma']
+
+                advantages_tensor = torch.zeros_like(whitened_rewards)
+
+                # for each entry in batch
+                for i in range(whitened_rewards.shape[0]):
+                    seq_len = int(mask[i].sum().item())
+                    if seq_len == 0:
+                        continue
+                    
+                    # compute the minimum of discounted rewards backwards in time
+                    last_outcome = torch.tensor(0.0, device=whitened_rewards.device)
+                    for t in reversed(range(seq_len)):
+                        nextvalues = old_values[i, t + 1] if t < seq_len - 1 else torch.tensor(0.0, device=whitened_rewards.device)
+                        if t == seq_len - 1:
+                            last_outcome = (1 - gamma) * whitened_rewards[i, t] + gamma * torch.min(whitened_rewards[i, t], nextvalues)
+                        else:
+                            last_outcome = (1 - gamma) * whitened_rewards[i, t] + gamma * torch.min(whitened_rewards[i, t], last_outcome)
+                        advantages_tensor[i, t] = last_outcome - old_values[i, t]
+                        
+                # for each token up to the max generated length, add the values we computed for all batches
+                for t in reversed(range(gen_length)):
+                    advantages_reversed.append(advantages_tensor[:, t])
+            else:
+                for t in reversed(range(gen_length)):
+                    nextvalues = old_values[:, t + 1] if t < gen_length - 1 else 0.0
+                    delta = whitened_rewards[:, t] + self.args['ppo']['gamma'] * nextvalues - old_values[:, t]
+                    lastgaelam = delta + self.args['ppo']['gamma'] * lastgaelam
+                    advantages_reversed.append(lastgaelam)
             advantages = torch.stack(advantages_reversed[::-1], dim=1)
             advantages = F.pad(advantages, (0, whitened_rewards.size(1) - gen_length), value=0.0)
             returns = advantages + old_values
@@ -516,5 +547,3 @@ class PPOTrainer:
         self.accelerator.wait_for_everyone()
         self.accelerator.save(result, f"{self.args['logging']['save_dir']}/last.pth")
         self.log_info(f'[step {step}] model checkpoint saved')
-
-

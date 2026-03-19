@@ -14,6 +14,7 @@ import datasets
 from datasets import load_dataset
 from tasks.qa_feedback.training.filtered_indices import indices
 from tasks.qa_feedback.training.gemma_reward_sentence import GemmaRewardModelSentence
+from tasks.qa_feedback.training.gemma_reward_model_coarse import GemmaRewardModelCoarse
 import torch
 import torch.nn.functional as F
 from torch.utils.data import Dataset, DataLoader
@@ -24,7 +25,7 @@ import yaml
 import nltk
 
 from fgrlhf.ppo import PPOTrainer
-from fgrlhf.policy import T5Policy
+from fgrlhf.policy import T5Policy, MistralPolicy
 from fgrlhf.value import T5Value
 from fgrlhf.utils import ensure_dir, set_seed, reduce_mean, reduce_sum, ceil_div, whiten, clamp
 
@@ -43,9 +44,9 @@ def log_info(s):
 # load parameters
 parser = argparse.ArgumentParser()
 parser.add_argument("--config", required=True, type=str, help="path to config file")
-args = parser.parse_args()
+parsed_args = parser.parse_args()
 # load yaml file
-with open(args.config) as f:
+with open(parsed_args.config) as f:
     args =yaml.safe_load(f)
 
 
@@ -163,9 +164,13 @@ def main():
     print(args['model']['policy_model']['ckpt'])
     print(args['env']['max_input_len'])
     print("====")
-    tokenizer = transformers.AutoTokenizer.from_pretrained(args['model']['policy_model']['ckpt'], 
+    model_name = "mistralai/Mistral-7B-Instruct-v0.3"
+    tokenizer = transformers.AutoTokenizer.from_pretrained(model_name, 
                                                            model_max_length=args['env']['max_input_len'])
-    tokenizer.padding_side = args['model']['policy_model']['input_padding_side']
+    # Causal LM generation generally expects left padding
+    tokenizer.padding_side = "left"
+    if tokenizer.pad_token is None:
+        tokenizer.pad_token = tokenizer.eos_token
     tokenizer.max_input_len = args['env']['max_input_len']
     tokenizer.max_generated_len = args['env']['max_generated_len']
     
@@ -212,21 +217,23 @@ def main():
     # Initialize models and optimizer
     log_info(f'Initializing models ...')
 
-    ref_policy = T5Policy(
-        model_ckpt=args['model']['policy_model']['ckpt'],
+    ref_policy = MistralPolicy(
+        model_ckpt=model_name,
         tokenizer=tokenizer,
         policy_value_sharing=args['model']['value_model']['policy_value_sharing'],
         accelerator=accelerator,
     )
     ref_policy.model, ref_policy.linear = accelerator.prepare(ref_policy.model, ref_policy.linear)
-    policy = T5Policy(
-        model_ckpt=args['model']['policy_model']['ckpt'],
+
+    policy = MistralPolicy(
+        model_ckpt=model_name,
         tokenizer=tokenizer,
         policy_value_sharing=args['model']['value_model']['policy_value_sharing'],
         accelerator=accelerator,
     )
     policy.model, policy.linear = accelerator.prepare(policy.model, policy.linear)
     
+    # TODO replace with GemmaValue
     value = T5Value(
         model_ckpt=args['model']['value_model']['ckpt'],
         model=policy.model if args['model']['value_model']['policy_value_sharing'] else None,
@@ -237,7 +244,12 @@ def main():
     if not args['model']['value_model']['policy_value_sharing']:
         value.model, value.linear = accelerator.prepare(value.model, value.linear)
     
-    reward = GemmaRewardModelSentence(tokenizer)
+    if args['reward']['granularity'] == 'coarse':
+        reward = GemmaRewardModelCoarse(tokenizer)
+    elif args['reward']['granularity'] == 'fine':
+        reward = GemmaRewardModelSentence(tokenizer)
+    else:
+        raise ValueError(f"Unknown reward granularity: {args['reward_granularity']}")
     
     print("HERE -1")
     # prepare reward models
@@ -276,6 +288,7 @@ def main():
         scheduler=scheduler,
         accelerator=accelerator,
         log_info=log_info,
+        use_mdr=args['ppo']['use_mdr'],
     )
     print("HERE")
     steps = list(range(total_steps + 1))
