@@ -10,6 +10,8 @@ import shutil
 from tqdm import tqdm
 from typing import Dict
 
+from datasets import load_dataset
+from tasks.qa_feedback.training.filtered_indices import indices
 from tasks.qa_feedback.training.gemma_reward_sentence import GemmaRewardModelSentence
 import torch
 import torch.nn.functional as F
@@ -48,15 +50,10 @@ with open(args.config) as f:
 
 # prepare data
 class TextGenDataset(Dataset):
-    def __init__(self, split, tokenizer, accelerator=None, length_limit=None):
+    def __init__(self, hf_dataset, split, tokenizer, accelerator=None, length_limit=None):
         super().__init__()
         
         self.split = split
-        self.dataset_fns = {
-            "train": "tasks/qa_feedback/data/train.json",
-            "dev": "tasks/qa_feedback/data/dev.json",
-            "test": "tasks/qa_feedback/data/test.json"
-        }
         
         self.n_card = 1
         if accelerator is not None:
@@ -65,7 +62,7 @@ class TextGenDataset(Dataset):
         
         self.tokenizer = tokenizer
 
-        self.instances = self.load_datasets()
+        self.instances = self.load_datasets(hf_dataset)
         
         if length_limit is not None:
             self.instances = self.instances[:length_limit]
@@ -79,21 +76,16 @@ class TextGenDataset(Dataset):
     def __getitem__(self, idx):
         return self.instances[idx]
 
-    def load_datasets(self): 
+    def load_datasets(self, hf_dataset): 
         instances = []
         
-        task_data = None
-        with open(self.dataset_fns[self.split], 'r') as f:
-            task_data = json.load(f)
-            
-        for task_instance in task_data:
+        for task_instance in hf_dataset:
             instances.append({
-                "prompt": task_instance['text'],
+                "prompt": task_instance['prompt'],
                 "metadata": {
-                    "prompt": task_instance['text'],
-                    "references": task_instance['answer'],
-                    "passages": task_instance['passages'],
-                    "question": task_instance['question'],}
+                    "prompt": task_instance['prompt'],
+                    "source": "harmful"
+                }
             })
         
         log_info(f'Loaded split {self.split} with {len(instances)} total instances')
@@ -179,12 +171,18 @@ def main():
     
     # Load data
     log_info(f'Loading data ...')
-    train_dataset = TextGenDataset( 'train', tokenizer, accelerator=accelerator)
+
+    hf_dataset = load_dataset("LLM-LAT/harmful-dataset", split="train")
+    hf_dataset = hf_dataset.select(indices)
+    
+    dataset_splits = hf_dataset.train_test_split(test_size=0.1, seed=args['train']['seed'])
+
+    train_dataset = TextGenDataset(dataset_splits['train'], 'train', tokenizer, accelerator=accelerator)
     # train ds is shuffled in its constructor
     train_dataloader = DataLoader(train_dataset, batch_size=args['train']['sampling_batch_size_per_card'], 
                                   shuffle=False, drop_last=True, collate_fn=train_dataset.collate_fn)
 
-    eval_dataset = TextGenDataset( 'dev',  tokenizer, accelerator=accelerator, length_limit=20)
+    eval_dataset = TextGenDataset(dataset_splits['test'], 'dev', tokenizer, accelerator=accelerator, length_limit=20)
     print(f"The evaluation dataset has {len(eval_dataset)} items.")
     print("BATCH SIZE")
     print(args['train']['sampling_batch_size_per_card'])
