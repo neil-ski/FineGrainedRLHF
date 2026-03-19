@@ -188,8 +188,7 @@ def main():
             new_item['prompt'] = f"{attack} {item['prompt']}"
             expanded_data.append(new_item)
             
-    expanded_data_dict = {k: [dic[k] for dic in expanded_data] for k in expanded_data[0]}
-    hf_dataset = Dataset.from_dict(expanded_data_dict)
+    hf_dataset = Dataset.from_list(expanded_data)
     
     dataset_splits = hf_dataset.train_test_split(test_size=0.1, seed=args['train']['seed'])
 
