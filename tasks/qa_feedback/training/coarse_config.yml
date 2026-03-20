@@ -17,7 +17,7 @@ model:
   
 
 reward:
-  granularity: fine
+  granularity: coarse
 
 env:
   max_input_len: 1024
@@ -43,14 +43,14 @@ train:
   lr: 0.00001
   n_warmup_steps: 100
   n_ppo_epoch_per_rollout: 4
-  kl_threshold: 10.0
+  kl_threshold: 30.0
   clip_grad: False
   max_grad_norm: 0.5
   seed: 42
   cuda_deterministic: True
 
 logging:
-  run_name: fine
+  run_name: coarse
   wandb_log: True
   wandb_entity: nflugovoy-university-of-california-berkeley
   wandb_project: RLHF

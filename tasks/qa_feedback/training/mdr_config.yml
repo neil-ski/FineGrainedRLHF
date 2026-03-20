@@ -33,7 +33,7 @@ ppo:
   cliprange: 0.2
   cliprange_value: 0.2
   whiten_rewards: True
-  use_mdr: False
+  use_mdr: True
 
 train:
   total_episodes: 80000
@@ -50,7 +50,7 @@ train:
   cuda_deterministic: True
 
 logging:
-  run_name: fine
+  run_name: mdr
   wandb_log: True
   wandb_entity: nflugovoy-university-of-california-berkeley
   wandb_project: RLHF

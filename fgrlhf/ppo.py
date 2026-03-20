@@ -89,8 +89,6 @@ class PPOTrainer:
             next(self.train_sampler)
 
         self.eval_accs = {}
-        print("++++++")
-        print(self.args['logging']['wandb_log'])
 
     def compute_advantages(self, results, num_samples):
         
@@ -196,30 +194,21 @@ class PPOTrainer:
         results['loss/value'] = vf_loss
 
     def train(self, step):
-        print("ABBA1")
         if step % self.args['train']['eval_interval'] == 0:
-            print("ABBA1.1")
             self.save(step=step)
-            print("ABBA1.2")
             self.valid(step=step)
-        print("ABBA1.3")
         self.accelerator.wait_for_everyone()
-        print("ABBA2")
         try:
             batch = next(self.train_sampler)
         except StopIteration:
             self.train_sampler = iter(self.train_dataloader)
             batch = next(self.train_sampler)
-        print("ABBA3")
         self.ref_policy_model.model.eval()
-        print("ABBA4")
         self.policy_model.model.eval()
-        # self.policy_model.model.train()
-        print("ABBA5")
+
         self.value_model.model.eval()
         self.value_model.linear.eval()
-        # self.value_model.model.train()
-        print("ABBA6")
+
         # Rollout from current policy
         with torch.no_grad():
             results = self.policy_model.sample(
@@ -228,33 +217,29 @@ class PPOTrainer:
                 num_return_sequences=self.args['env']['train_num_samples_per_input'],
                 **self.args['model']['policy_model']['train_generation_kwargs'],
             )
-        print("ABBA7")
+
         forward_inputs = {
             'prompts_input_ids': results['prompts_input_ids'],
             'prompts_attention_mask': results['prompts_attention_mask'],
             'generated_input_ids': results['generated_input_ids'],
             'generated_attention_mask': results['generated_attention_mask'],
         }
-        print("ABBA8")
         
         with torch.no_grad():
             policy_forward = self.policy_model.forward_pass(**forward_inputs)
             results.update(policy_forward)
         
-        print("ABBA9")
         # Run value network
         if not self.args['model']['value_model']['policy_value_sharing']:
             with torch.no_grad(): # treat the values at beginning of step as ground-truth
                 value_forward = self.value_model.forward_pass(**forward_inputs)
                 results['generated_value'] = value_forward['generated_value']
                 results['generated_value'] *= results['generated_attention_mask']  # TODO: I doubt if this line is necessary
-        print("ABBA10")
         # Run ref policy
         with torch.no_grad():
             ref_policy_forward = self.ref_policy_model.forward_pass(**forward_inputs)
             results['generated_ref_logits'] = ref_policy_forward['generated_logits']
             results['generated_ref_logprobs'] = ref_policy_forward['generated_logprobs']
-        print("ABBA11")
         # Get reward
         with torch.no_grad():
             reward_results = self.reward_model.get_reward(
@@ -267,10 +252,8 @@ class PPOTrainer:
             )
             results.update(reward_results)
             self.reward_model.kl_penalize_reward(results)
-        print("ABBA12")
         # Get advantages
         self.compute_advantages(results, self.args['env']['train_num_samples_per_input'])
-        print("ABBA13")
         n_results = len(results['generated_input_ids'])
         
         loss_totals, loss_policies, loss_values =  [], [], []
@@ -282,13 +265,8 @@ class PPOTrainer:
         self.policy_model.model.train()
         self.value_model.model.train()
         self.value_model.linear.train()
-        print("ABBA14")
-        for ppo_epoch_idx in range(self.args['train']['n_ppo_epoch_per_rollout']):
-            print("LOOP")
-            print(ppo_epoch_idx)
-            print("TOTAL ")
-            print(self.args['train']['n_ppo_epoch_per_rollout'])
 
+        for ppo_epoch_idx in range(self.args['train']['n_ppo_epoch_per_rollout']):
             self.optimizer.zero_grad()
             
             # get the weight for each sub-batch
@@ -388,7 +366,6 @@ class PPOTrainer:
         self.accelerator.wait_for_everyone()
         end_time = time.perf_counter()
         elapsed_time = end_time - start_time
-        print(f"WAIT 1 time: {elapsed_time} seconds")
 
         self.policy_model.model.eval()
         if not self.args['model']['value_model']['policy_value_sharing']:
@@ -398,14 +375,10 @@ class PPOTrainer:
         wandb_table = None
         
         n_entries = 0
-        print("HERE1.4")
         with torch.no_grad():
-            print("BATCH SIZE")
-            print(self.eval_dataloader.batch_size)
             validation_batch = tqdm(self.eval_dataloader) if self.accelerator.is_main_process else self.eval_dataloader
             for i, batch in enumerate(validation_batch):
                 current_bs = batch['prompts_input_ids'].shape[0]
-                print(f"--- Iteration {i} | Real Batch Size: {current_bs} ---")
                 
                 results = self.policy_model.sample(
                     prompts_input_ids=batch['prompts_input_ids'],
@@ -430,8 +403,6 @@ class PPOTrainer:
 
                 end_time = time.perf_counter()
                 elapsed_time = end_time - start_time
-                print(f"gather 1 time: {elapsed_time} seconds")
-
                 
                 for eval_k, eval_v in eval_results.items():
                     start_time = time.perf_counter()
@@ -440,7 +411,6 @@ class PPOTrainer:
                     
                     end_time = time.perf_counter()
                     elapsed_time = end_time - start_time
-                    print(f"gather 2 time: {elapsed_time} seconds")
 
                 # initialize wandb table if it does not exist
                 if wandb_table is None:
@@ -451,7 +421,6 @@ class PPOTrainer:
 
                     end_time = time.perf_counter()
                     elapsed_time = end_time - start_time
-                    print(f"wandb init time: {elapsed_time} seconds")
                 
                 if self.accelerator.is_main_process:
                     
@@ -482,7 +451,7 @@ class PPOTrainer:
             n_dev_samples = len(wandb_table.data)
             
             stats = {'eval/step': step,
-                     f'eval_generation/step_{step}': wandb_table}
+                     'eval/generation': wandb_table}
             
             value_columns = columns[3:] # the first three are steps, inputs, outputs
             stats.update(self.reward_model.aggregate_metrics(wandb_table, value_columns))
@@ -513,7 +482,7 @@ class PPOTrainer:
 
                 end_time = time.perf_counter()
                 elapsed_time = end_time - start_time
-                print(f"WAIT 3 time: {elapsed_time} seconds")
+
 
                 start_time = time.perf_counter()
 
@@ -523,7 +492,6 @@ class PPOTrainer:
 
                 end_time = time.perf_counter()
                 elapsed_time = end_time - start_time
-                print(f"SAVE time: {elapsed_time} seconds")
 
     def save(self, step):
         # this will overwrite an existing ckpt with the save filename!
