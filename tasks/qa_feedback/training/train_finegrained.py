@@ -196,7 +196,7 @@ def main():
             
     hf_dataset = datasets.Dataset.from_list(expanded_data)
     
-    dataset_splits = hf_dataset.train_test_split(test_size=0.1, seed=args['train']['seed'])
+    dataset_splits = hf_dataset.train_test_split(test_size=0.01, seed=args['train']['seed'])
 
     train_dataset = TextGenDataset(dataset_splits['train'], 'train', tokenizer, accelerator=accelerator)
     # train ds is shuffled in its constructor
