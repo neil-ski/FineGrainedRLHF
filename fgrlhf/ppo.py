@@ -445,7 +445,7 @@ class PPOTrainer:
             n_dev_samples = len(wandb_table.data)
             
             stats = {'eval/step': step,
-                     'eval/generation': wandb_table}
+                     f'eval_generation/step_{step}': wandb_table}
             
             value_columns = columns[3:] # the first three are steps, inputs, outputs
             stats.update(self.reward_model.aggregate_metrics(wandb_table, value_columns))
