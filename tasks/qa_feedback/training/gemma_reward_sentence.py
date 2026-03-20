@@ -23,7 +23,7 @@ class GemmaRewardModelSentence(BasicReward):
         self.policy_tokenizer = policy_tokenizer
         self.gemma_reward = GemmaRewardModel()
         self.nlp = spacy.load("en_core_web_sm")
-        
+        self.use_mdr = use_mdr
     def process_one_generation(self, long_text: str, policy_text_len: int) -> list[int]:
         long_text = long_text.rstrip()
         doc = self.nlp(long_text)
