@@ -10,9 +10,10 @@
 from typing import Union, List, Dict
 import torch
 import torch.nn.functional as F
-from transformers import T5ForConditionalGeneration, AutoModelForCausalLM
+from transformers import T5ForConditionalGeneration, AutoModelForCausalLM, BitsAndBytesConfig
 from typing import Optional, List, Iterable, Dict, Any, Tuple
 from .utils import logits_to_entropy, mask_pad
+from peft import LoraConfig, get_peft_model, TaskType
 
 
 class T5Policy:
@@ -134,12 +135,36 @@ class MistralPolicy:
                  tokenizer,
                  policy_value_sharing: bool,
                  accelerator,
+                 is_reference: bool = False,
                 ):
         self.tokenizer = tokenizer
         self.policy_value_sharing = policy_value_sharing
         self.accelerator = accelerator
 
-        self.model = AutoModelForCausalLM.from_pretrained(model_ckpt)
+        bnb_config = BitsAndBytesConfig(
+            load_in_4bit=True,
+            bnb_4bit_compute_dtype=torch.bfloat16,
+            bnb_4bit_use_double_quant=True,
+            bnb_4bit_quant_type="nf4"
+        )
+        
+        self.model = AutoModelForCausalLM.from_pretrained(
+            model_ckpt,
+            quantization_config=bnb_config,
+            device_map={"": accelerator.device}
+        )
+        
+        if not is_reference:
+            lora_config = LoraConfig(
+                task_type=TaskType.CAUSAL_LM,
+                r=16,
+                lora_alpha=32,
+                lora_dropout=0.05,
+                bias="none",
+                target_modules=["q_proj", "k_proj", "v_proj", "o_proj"]
+            )
+            self.model = get_peft_model(self.model, lora_config)
+            self.model.gradient_checkpointing_enable()
         
         # regression head for policy-value sharing
         self.linear = torch.nn.Linear(self.model.config.hidden_size, 1)    

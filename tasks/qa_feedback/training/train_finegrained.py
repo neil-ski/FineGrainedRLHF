@@ -203,6 +203,7 @@ def main():
     train_dataloader = DataLoader(train_dataset, batch_size=args['train']['sampling_batch_size_per_card'], 
                                   shuffle=False, drop_last=True, collate_fn=train_dataset.collate_fn)
 
+    # TODO how to make this shorter?
     eval_dataset = TextGenDataset(dataset_splits['test'], 'dev', tokenizer, accelerator=accelerator)
     print(f"The evaluation dataset has {len(eval_dataset)} items.")
     print("BATCH SIZE")
@@ -227,6 +228,7 @@ def main():
         tokenizer=tokenizer,
         policy_value_sharing=args['model']['value_model']['policy_value_sharing'],
         accelerator=accelerator,
+        is_reference=True,
     )
     ref_policy.model, ref_policy.linear = accelerator.prepare(ref_policy.model, ref_policy.linear)
 
@@ -266,6 +268,8 @@ def main():
         parameters = chain(policy.model.parameters(), policy.linear.parameters())
     else:
         parameters = chain(policy.model.parameters(), policy.linear.parameters(), value.model.parameters(), value.linear.parameters())
+        
+    parameters = filter(lambda p: p.requires_grad, parameters)
     optimizer = torch.optim.Adam(parameters, lr=args['train']['lr'], eps=1e-5)
     total_steps = ceil_div(args['train']['total_episodes'], 
                                 args['train']['sampling_batch_size_per_card'] * accelerator.num_processes * args['env']['train_num_samples_per_input'])

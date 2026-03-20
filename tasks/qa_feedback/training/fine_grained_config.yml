@@ -17,20 +17,6 @@ model:
   
 
 reward:
-  relevance_model:
-    ckpt: ./tasks/qa_feedback/model_outputs/rel_rm
-    positive_reward: 0.3
-    negative_reward: -0.3
-  factuality_model:
-    ckpt: ./tasks/qa_feedback/model_outputs/fact_rm
-    positive_reward: 0.5
-    negative_reward: -0.5
-  completeness_model:
-    ckpt: ./tasks/qa_feedback/model_outputs/comp_rm
-    mean: -0.44677690555995353
-    std: 8.301160619054132
-    bias: 0.0
-    scale: 0.3
   granularity: coarse
 
 env:
@@ -52,11 +38,11 @@ ppo:
 train:
   total_episodes: 80000
   eval_interval: 50
-  sampling_batch_size_per_card: 16
-  training_batch_size_per_card: 1
+  sampling_batch_size_per_card: 8
+  training_batch_size_per_card: 4
   lr: 0.00001
   n_warmup_steps: 100
-  n_ppo_epoch_per_rollout: 1
+  n_ppo_epoch_per_rollout: 4
   kl_threshold: 10.0
   clip_grad: False
   max_grad_norm: 0.5
