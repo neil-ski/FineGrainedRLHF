@@ -16,7 +16,7 @@ class RewardMetadata(TypedDict, total=False):
     prompt: str
 
 class GemmaRewardModelSentence(BasicReward):
-    def __init__(self, policy_tokenizer, kl_coef=0.1):
+    def __init__(self, policy_tokenizer, use_mdr: bool, kl_coef=0.1):
         # 1. Inherit from BasicReward to get kl_penalize_reward()
         super().__init__(kl_coef)
         
@@ -55,8 +55,13 @@ class GemmaRewardModelSentence(BasicReward):
             sentence_end_indices = self.process_one_generation(gen_text, policy_len)
             
             this_fine_grained_reward = [0.0] * policy_len
+            start_idx = 0
             for i, end_idx in enumerate(sentence_end_indices):
                 this_fine_grained_reward[end_idx] = sentence_rewards[i]
+                if self.use_mdr:
+                    for j in range(start_idx, end_idx + 1):
+                        this_fine_grained_reward[j] = sentence_rewards[i]
+                    start_idx = end_idx + 1
                 
             batch_gemma_rewards.append(this_fine_grained_reward)
             n_sentences.append(len(sentence_end_indices))

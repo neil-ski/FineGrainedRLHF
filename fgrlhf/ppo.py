@@ -352,12 +352,6 @@ class PPOTrainer:
                     'train/reward/KL': this_batch_kl,
                     'train/reward/raw': np.mean(reward_raw),
                 })
-                
-            if this_batch_kl > self.args['train']['kl_threshold']:
-                self.log_info(f"KL divergence {this_batch_kl} exceeds threshold {self.args['train']['kl_threshold']}")
-                self.huge_kl_count += 1
-                if self.huge_kl_count >= 5:
-                    self.should_early_stop = True
 
     def valid(self, step):
         self.log_info(f'Evaluating [step {step}] ...')

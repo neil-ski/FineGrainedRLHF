@@ -245,7 +245,7 @@ def main():
     if args['reward']['granularity'] == 'coarse':
         reward = GemmaRewardModelCoarse(tokenizer)
     elif args['reward']['granularity'] == 'fine':
-        reward = GemmaRewardModelSentence(tokenizer)
+        reward = GemmaRewardModelSentence(tokenizer, use_mdr=args['ppo']['use_mdr'])
     else:
         raise ValueError(f"Unknown reward granularity: {args['reward_granularity']}")
     
